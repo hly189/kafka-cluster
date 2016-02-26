@@ -1,0 +1,5 @@
+zk: 
+  version: 3.4.6
+  mirror: http://apache.xl-mirror.nl
+  data_dir: "/var/lib/zookeeper"
+  install_dir: "/etc"

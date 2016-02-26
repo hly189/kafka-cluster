@@ -1,0 +1,62 @@
+# Download zookeeper
+
+- name: Setting internal variable
+  set_fact:
+    zk_name: zookeeper-{{ zk.version }}
+
+- name: Setting internal variable
+  set_fact: 
+     zk_dir="{{ zk.install_dir }}/{{ zk_name }}"
+
+- name: Check to see if Zookeeper tar is downloaded
+  command: test -f /tmp/{{zk_name}}.tar.gz
+  register: zk_downloaded
+  failed_when: zk_downloaded.rc not in [0,1]
+  changed_when: False
+
+- name: Ensure Zookeeper tar is downloaded
+  get_url: 
+     url: "{{zk.mirror}}/zookeeper/{{zk_name}}/{{zk_name}}.tar.gz"
+     dest: "/tmp"
+  when: zk_downloaded.rc == 1
+
+- name: Ensure tar is extracted
+  command: 
+     tar xzf /tmp/{{zk_name}}.tar.gz
+     chdir="{{zk.install_dir}}"
+
+# Create group and user for zookeeper
+
+- name: Create group
+  group: 
+     name: zookeeper
+     state: present
+
+- name: Crete user
+  user: 
+     name: zookeeper
+     group: zookeeper
+
+# Config and start 
+
+- name: Ensure zoo.cfg is present
+  template: 
+     src: zoo.cfg.j2
+     dest: "{{ zk_dir }}/conf/zoo.cfg"
+  notify: restart zookeeper
+
+- name: Ensure data directory is existed
+  file: 
+     path: "{{ zk.data_dir }}"
+     state: directory
+     owner: zookeeper
+     group: zookeeper
+
+- name: Ensure myid is in {{ zk.data_dir }}.myid
+  template: 
+     src: myid
+     dest: "{{ zk.data_dir }}/myid"
+  notify: restart zookeeper
+
+#- name: ZooKeeper | Ensure the service is running
+#  shell: "{{zk_dir}}/bin/zkServer.sh restart"
