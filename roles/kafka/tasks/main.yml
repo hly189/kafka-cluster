@@ -1,0 +1,48 @@
+---
+- name: install tools
+  yum: name="@Development tools" state=present
+
+- name: Setting internal variable
+  set_fact: 
+    kafka_name: kafka_{{ kafka.scala_version }}-{{kafka.version}}
+
+- name: Setting internal variable
+  set_fact:
+    kafka_dir: "{{kafka.install_dir}}/{{ kafka_name}}"
+
+# Download and extracted Kafka
+- name: Check to see if Kafka is downloaded
+  command: test -f /tmp/{{kafka_name}}.tgz
+  register: kafka_download
+  failed_when: kafka_download.rc not in [0,1]
+  changed_when: False
+
+- name: Ensure Kafka is downloaded. 
+  get_url: 
+    url: "{{kafka.mirror}}/kafka/{{kafka.version}}/{{kafka_name}}.tgz"
+    dest: /tmp
+  when: kafka_download.rc == 1
+
+- name: Ensure Kafka is extracted
+  command: 
+    tar xzf /tmp/{{kafka_name}}.tgz
+    chdir="{{kafka.install_dir}}"
+
+# Set up User and Group for Kafka
+- name: Create Group
+  group: 
+    name: kafka
+    state: present
+
+- name: Create User
+  user: 
+    name: kafka
+    group: kafka
+
+# Config and Start Kafka
+- name: Ensure {{kafka.data_dir}} exists
+  file: 
+    path: "{{kafka.data_dir}}"
+    state: directory 
+    owner: kafka
+    group: kafka 

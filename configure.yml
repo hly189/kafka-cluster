@@ -8,3 +8,8 @@
   sudo: yes
   roles: 
     - zk
+
+- hosts: kafka
+  sudo: yes
+  roles: 
+    - kafka
